@@ -19,7 +19,10 @@ prepare:
     - |
       ls
       helm dependency update
-      helm template traveltours ./frontend | tee -a rendered.yaml
+      helm template frontend ./frontend | tee -a rendered.yaml
+      helm template backauth ./backauth | tee -a rendered.yaml
+      helm template backtours ./backtours | tee -a rendered.yaml
+      helm template databases ./databases | tee -a rendered.yaml
   artifacts:
     paths:
       - rendered.yaml
@@ -42,13 +45,14 @@ deploy:
     - |
       ls
       helm dependency update
-      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' values.yaml
-      helm install -f rendered.yaml frontend /helm/fe
-      helm upgrade --install frontend /helm/fe --namespace $TARGET_NS --create-namespace
-
-      helm upgrade --install be-auth /helm/be-auth --namespace $TARGET_NS --create-namespace
-      helm upgrade --install be-tours /helm/be-tours --namespace $TARGET_NS --create-namespace
-      helm upgrade --install database /helm/db --namespace $TARGET_NS --create-namespace
+      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' /frontend/values.yaml
+      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' /backauth/values.yaml
+      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' /backtours/values.yaml
+      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' /databases/values.yaml
+      helm upgrade --install frontend /frontend/ --namespace $TARGET_NS --create-namespace
+      helm upgrade --install be-auth /backauth/ --namespace $TARGET_NS --create-namespace
+      helm upgrade --install be-tours /backtours/ --namespace $TARGET_NS --create-namespace
+      helm upgrade --install database /databases/ --namespace $TARGET_NS --create-namespace
     - echo $CI_COMMIT_REF_SLUG
   environment:
     name: $TARGET_NS
