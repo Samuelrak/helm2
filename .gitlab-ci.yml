@@ -45,14 +45,14 @@ deploy:
     - |
       ls
       helm dependency update
-      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' /frontend/values.yaml
-      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' /backauth/values.yaml
-      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' /backtours/values.yaml
-      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' /databases/values.yaml
-      helm upgrade --install frontend /frontend/ --namespace $TARGET_NS --create-namespace
-      helm upgrade --install be-auth /backauth/ --namespace $TARGET_NS --create-namespace
-      helm upgrade --install be-tours /backtours/ --namespace $TARGET_NS --create-namespace
-      helm upgrade --install database /databases/ --namespace $TARGET_NS --create-namespace
+      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' frontend/values.yaml
+      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' backauth/values.yaml
+      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' backtours/values.yaml
+      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' databases/values.yaml
+      helm upgrade --install frontend frontend/ --namespace $TARGET_NS --create-namespace
+      helm upgrade --install be-auth backauth/ --namespace $TARGET_NS --create-namespace
+      helm upgrade --install be-tours backtours/ --namespace $TARGET_NS --create-namespace
+      helm upgrade --install database databases/ --namespace $TARGET_NS --create-namespace
     - echo $CI_COMMIT_REF_SLUG
   environment:
     name: $TARGET_NS
