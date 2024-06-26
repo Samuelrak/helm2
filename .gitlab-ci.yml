@@ -1,0 +1,89 @@
+stages:
+  - build
+  - validate
+  - deploy
+  - tear_down
+  - release
+
+
+variables:
+  DOCKER_REPO: samuelrak/helm
+  VERSION: latest
+
+prepare:
+  stage: validate
+  image: samuelrak/helm:master
+  rules:
+     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - |
+      ls
+      helm dependency update
+      helm template traveltours /* | tee -a rendered.yaml
+  artifacts:
+    paths:
+      - rendered.yaml
+
+
+      
+deploy:
+  stage: deploy
+  image: samuelrak/helm:master
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      variables:
+        TARGET_NS: $CI_COMMIT_REF_SLUG
+        NEW_HOST: "$CI_COMMIT_REF_SLUG.mydomain.org"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      variables:
+        TARGET_NS: prod
+        NEW_HOST: "www.mydomain.org"    
+  script:
+    - |
+      ls
+      helm dependency update
+      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' values.yaml
+      helm install -f rendered.yaml frontend /helm/fe
+      helm upgrade --install frontend /helm/fe --namespace $TARGET_NS --create-namespace
+
+      helm upgrade --install be-auth /helm/be-auth --namespace $TARGET_NS --create-namespace
+      helm upgrade --install be-tours /helm/be-tours --namespace $TARGET_NS --create-namespace
+      helm upgrade --install database /helm/db --namespace $TARGET_NS --create-namespace
+    - echo $CI_COMMIT_REF_SLUG
+  environment:
+    name: $TARGET_NS
+    url: $NEW_HOST
+       
+    
+# tear_down: 
+#   image: samuelrak/helm:latest
+#   stage: tear_down
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+#       variables:
+#         TARGET_NS: $CI_COMMIT_REF_SLUG
+#   script:
+#     - |
+#       helm list --namespace $TARGET_NS 2>/dev/null || ( echo "Release not installed" && exit 0 )
+#       kubectl delete ns $TARGET_NS
+#   environment:
+#     name: $TARGET_NS
+#     action: stop    
+
+    
+
+release:
+  stage: release
+  image: samuelrak/helm:main
+  rules:
+  - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    changes:
+      paths:
+        - Chart.yaml
+  script:
+    - |
+      VERSION=$(cat Chart.yaml | yq '.version')
+      TAG_NAME="v$VERSION"
+      release-cli --private-token $PERSONAL_ACCESS_TOKEN create --name "Release helm $TAG_NAME" --tag-name $TAG_NAME --ref $CI_COMMIT_SHA
+
+
