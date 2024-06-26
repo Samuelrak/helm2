@@ -1,0 +1,12 @@
+apiVersion: {{ .Values.api.v1 }}
+kind: {{ .Values.kind.service }}
+metadata:
+  name: {{ .Values.label.service }}
+  namespace: {{ .Values.namespace.travel }}
+spec:
+  selector:
+    app: {{ .Values.label.app }}
+  ports:
+    - protocol: {{ .Values.service.protocol }}
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
