@@ -1,8 +1,9 @@
 replicaCount: 3
 
 image:
-  mysql: "mysql:5.7"
-  xtrabackup: "gcr.io/google-samples/xtrabackup:1.0"
+  mydockerhub:
+    repository: samuelrak/db-git
+    version: main
 
 service:
   type: ClusterIP

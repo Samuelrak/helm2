@@ -2,6 +2,11 @@ api:
   app: apps/v1
   v1: v1
 
+image:
+  mydockerhub:
+    repository: samuelrak/be-auth-git
+    version: main
+
 namespace:
   travel: travel
 
@@ -22,11 +27,6 @@ service:
 label:
   app: backend-auth
   service: backend-auth-service
-
-image:
-  mydockerhub:
-    repository: samuelrak/travel
-    version: t-be-auth10
 
 config:
   mysql: mysql-config
