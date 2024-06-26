@@ -1,0 +1,55 @@
+api:
+  app: apps/v1
+  v1: v1
+
+namespace:
+  travel: travel
+
+replicas: 1
+
+kind:
+  deploy: Deployment
+  service: Service
+  secret: Secret
+  config: ConfigMap
+  pvc: PersistentVolumeClaim
+
+service:
+  type: ClusterIP
+  port: 5001
+  protocol: TCP
+
+label:
+  app: backend-tours
+  service: backend-tours-service
+
+image:
+  mydockerhub:
+    repository: samuelrak/travel
+    version: t-be-tours10
+
+config:
+  mysql: mysql-config
+
+serviceAccount:
+  create: true
+  name: my-travel
+  annotations:
+    example.com/annotation: "value"
+  automount: true
+
+ingress:
+  enabled: true
+  annotations: {}
+  hosts:
+    - host: travel.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80

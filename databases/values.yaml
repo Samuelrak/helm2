@@ -1,0 +1,54 @@
+replicaCount: 3
+
+image:
+  mysql: "mysql:5.7"
+  xtrabackup: "gcr.io/google-samples/xtrabackup:1.0"
+
+service:
+  type: ClusterIP
+  port: 3306
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+configMap:
+  name: mysql-config
+  files:
+    - my.cnf=my.cnf
+  literals:
+    - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=true
+    - MARIADB_USER=root
+    - HOSTNAME=mysql-headless
+
+initDb:
+  name: init-db
+  files:
+    traveltours.sql: traveltours.sql
+
+pvc:
+  storage: 1Gi
+
+serviceAccount:
+  create: false
+  name: my-travel
+  annotations:
+    example.com/annotation: "value"
+  automount: true
+
+ingress:
+  enabled: true
+  annotations: {}
+  hosts:
+    - host: travel.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: be-tours
+description: A Helm chart for the back-end tours service
+type: application
+version: 0.1.0
+appVersion: "1.0"
