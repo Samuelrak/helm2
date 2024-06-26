@@ -19,7 +19,7 @@ prepare:
     - |
       ls
       helm dependency update
-      helm template traveltours /* | tee -a rendered.yaml
+      helm template traveltours ~/* | tee -a rendered.yaml
   artifacts:
     paths:
       - rendered.yaml
