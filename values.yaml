@@ -1,0 +1,92 @@
+api:
+  app: apps/v1
+  v1: v1
+
+images:
+  backendauth:
+    repository: "samuelrak/be-auth-git"
+    tag: "main"
+  backendtours:
+    repository: "samuelrak/be-tours-git"
+    tag: "main"
+  database:
+    repository: "samuelrak/db-git"
+    tag: "main"
+  frontend:
+    repository: "samuelrak/fe-git"
+    tag: "main"
+
+namespace:
+  travel: travel
+
+replicas: 2
+
+kind:
+  deploy: Deployment
+  service: Service
+  config: ConfigMap
+
+service:
+  name: front-end-service
+  port: 4200
+  protocol: TCP
+  targetPort: 80
+  containerport: 80
+
+label:
+  app: front-end
+  service: front-end-service
+  config: front-end-config
+
+image:
+  mydockerhub:
+    repository: samuelrak/travel
+    version: t-feX
+
+configMap:
+  environmentTs: |
+    window['environmentauth'] = {
+      production: false,
+      apiUrl: 'http://backend-auth-service:5000'
+    };
+    window['environmenttours'] = {
+      production: false,
+      apiUrl: 'http://backend-tours-service:5001'
+    };
+environmentProdTs: |
+    window['environmentauth'] = {
+      production: true,
+      apiUrl: 'http://backend-auth-service:5000'
+    };
+    window['environmenttours'] = {
+      production: true,
+      apiUrl: 'http://backend-tours-service:5001'
+    };
+
+env:
+  name: API_URL_AUTH
+  value: http://mytravel-123.com/login
+
+serviceAccount:
+  create: false
+  name: my-travel
+  annotations:
+    example.com/annotation: "value"
+  automount: true
+
+ingress:
+  enabled: true
+  annotations: {}
+  hosts:
+    - host: travel.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: {{ .Values.label.app }}
-        image: {{ .Values.image.mydockerhub.repository }}>:{{ .Values.image.mydockerhub.version }}
+        image: {{ .Values.image.backendtours.repository }} : {{ .Values.image.backendtours.tag }}
         envFrom:
          - configMapRef:
              name: {{ .Values.config.mysql }}
