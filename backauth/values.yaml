@@ -32,7 +32,7 @@ config:
   mysql: mysql-config
 
 serviceAccount:
-  create: true
+  create: false
   name: my-travel
   annotations:
     example.com/annotation: "value"
