@@ -18,8 +18,14 @@ prepare:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes:
         paths:
-        - ./*/templates/*
-        - ./*/values.yaml
+          - frontend/**/templates/*
+          - frontend/**/values.yaml
+          - backtours/**/templates/*
+          - backtours/**/values.yaml
+          - backauth/**/templates/*
+          - backauth/**/values.yaml
+          - databases/**/templates/*
+          - databases/**/values.yaml
   script:
     - |
       ls
