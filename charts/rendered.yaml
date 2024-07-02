@@ -1,0 +1,842 @@
+---
+# Source: fe/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: front-end-config
+  namespace: travel
+data:
+  environment.ts: |
+    window['environmentauth'] = {
+      production: false,
+      apiUrl: 'http://backend-auth-service:5000'
+    };
+    window['environmenttours'] = {
+      production: false,
+      apiUrl: 'http://backend-tours-service:5001'
+    };
+    
+  environment.prod.ts: |
+    window['environmentauth'] = {
+      production: true,
+      apiUrl: 'http://backend-auth-service:5000'
+    };
+    window['environmenttours'] = {
+      production: true,
+      apiUrl: 'http://backend-tours-service:5001'
+    };
+---
+# Source: fe/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: front-end-service
+  namespace: travel
+spec:
+  selector:
+    app: front-end
+  ports:
+    - protocol: TCP
+      port: 4200
+      targetPort: 4200
+---
+# Source: fe/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: front-end
+  namespace: travel
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: front-end
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: front-end
+        version: v1
+    spec:
+      containers:
+      - name: front-end
+        image: samuelrak/fe-git:main
+#        image: samuelrak/travel:t-fe20
+        ports:
+        - containerPort: 80
+#        volumeMounts:
+#        - name: config-volume
+#          mountPath: /app/src/environments
+        env:
+          - name: API_URL_AUTH
+            value: http://mytravel-123.com/login
+#      volumes:
+#      - name: config-volume
+#        configMap:
+#          name: frontend-config
+---
+# Source: fe/templates/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend-fe
+  labels:
+    helm.sh/chart: fe-0.1.0
+    app.kubernetes.io/name: fe
+    app.kubernetes.io/instance: frontend
+    app.kubernetes.io/version: "1.3"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend-fe
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+---
+# Source: fe/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend-fe
+  labels:
+    helm.sh/chart: fe-0.1.0
+    app.kubernetes.io/name: fe
+    app.kubernetes.io/instance: frontend
+    app.kubernetes.io/version: "1.3"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  rules:
+    - host: "travel.com"
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: frontend-fe
+                port:
+                  number: 4200
+---
+# Source: fe/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "frontend-fe-test-connection"
+  labels:
+    helm.sh/chart: fe-0.1.0
+    app.kubernetes.io/name: fe
+    app.kubernetes.io/instance: frontend
+    app.kubernetes.io/version: "1.3"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['frontend-fe:4200']
+  restartPolicy: Never
+---
+# Source: be-tours/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-tours-service
+  namespace: travel
+spec:
+  selector:
+    app: backend-tours
+  ports:
+    - protocol: TCP
+      port: 5001
+      targetPort: 5001
+---
+# Source: be-tours/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-tours
+  namespace: travel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-tours
+  template:
+    metadata:
+      labels:
+        app: backend-tours
+    spec:
+      containers:
+      - name: backend-tours
+        image: samuelrak/be-tours-git:main
+        envFrom:
+         - configMapRef:
+             name: mysql-config
+        ports:
+        - containerPort: 5001
+---
+# Source: be-tours/templates/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backtours-be-tours
+  labels:
+    helm.sh/chart: be-tours-0.1.0
+    app.kubernetes.io/name: be-tours
+    app.kubernetes.io/instance: backtours
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backtours-be-tours
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+---
+# Source: be-tours/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backtours-be-tours
+  labels:
+    helm.sh/chart: be-tours-0.1.0
+    app.kubernetes.io/name: be-tours
+    app.kubernetes.io/instance: backtours
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  rules:
+    - host: "travel.com"
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: backtours-be-tours
+                port:
+                  number: 5001
+---
+# Source: be-tours/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "backtours-be-tours-test-connection"
+  labels:
+    helm.sh/chart: be-tours-0.1.0
+    app.kubernetes.io/name: be-tours
+    app.kubernetes.io/instance: backtours
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['backtours-be-tours:5001']
+  restartPolicy: Never
+---
+# Source: be-auth/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-auth-service
+  namespace: travel
+spec:
+  selector:
+    app: backend-auth
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+---
+# Source: be-auth/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-auth
+  namespace: travel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-auth
+  template:
+    metadata:
+      labels:
+        app: backend-auth
+    spec:
+      containers:
+      - name: backend-auth
+        image: samuelrak/be-auth-git:main
+        envFrom:
+         - configMapRef:
+             name: mysql-config
+        ports:
+        - containerPort: 5000
+---
+# Source: be-auth/templates/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backauth-be-auth
+  labels:
+    helm.sh/chart: be-auth-0.1.0
+    app.kubernetes.io/name: be-auth
+    app.kubernetes.io/instance: backauth
+    app.kubernetes.io/version: "1.4"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backauth-be-auth
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+---
+# Source: be-auth/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backauth-be-auth
+  labels:
+    helm.sh/chart: be-auth-0.1.0
+    app.kubernetes.io/name: be-auth
+    app.kubernetes.io/instance: backauth
+    app.kubernetes.io/version: "1.4"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  rules:
+    - host: "travel.com"
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: backauth-be-auth
+                port:
+                  number: 5000
+---
+# Source: be-auth/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "backauth-be-auth-test-connection"
+  labels:
+    helm.sh/chart: be-auth-0.1.0
+    app.kubernetes.io/name: be-auth
+    app.kubernetes.io/instance: backauth
+    app.kubernetes.io/version: "1.4"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['backauth-be-auth:5000']
+  restartPolicy: Never
+---
+# Source: fe/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-db
+  namespace: travel
+data:
+  traveltours.sql: |
+    -- phpMyAdmin SQL Dump
+    -- version 5.2.1
+    -- https://www.phpmyadmin.net/
+    --
+    -- Host: 127.0.0.1
+    -- Generated at: Sun 04.Feb 2024, 22:56
+    -- Server version: 10.4.32-MariaDB
+    -- PHP version: 8.2.12
+
+    SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+    START TRANSACTION;
+    SET time_zone = "+00:00";
+
+    /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+    /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+    /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+    /*!40101 SET NAMES utf8mb4 */;
+
+    --
+    -- Database: `traveltours`
+    --
+
+    -- --------------------------------------------------------
+
+    --
+    -- Structure for table `tours`
+    --
+
+    CREATE DATABASE IF NOT EXISTS traveltours;
+    USE traveltours;
+
+    CREATE TABLE IF NOT EXISTS `tours` (
+      `id` int(11) NOT NULL,
+      `name` varchar(255) NOT NULL,
+      `location` varchar(255) NOT NULL,
+      `continent` varchar(255) NOT NULL,
+      `start_date` date NOT NULL,
+      `end_date` date NOT NULL,
+      `people` int(11) NOT NULL,
+      `price` decimal(10,2) NOT NULL,
+      `photo` longblob DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+    --
+    -- Data for table `tours`
+    --
+
+    INSERT INTO `tours` (`id`, `name`, `location`, `continent`, `start_date`, `end_date`, `people`, `price`, `photo`) VALUES
+    (8, 'The hottest place', 'Sahara', 'Africa', '2024-02-23', '2024-02-23', 14, 13.00, ''),
+    (9, 'New York City', 'New York', 'North America', '2024-02-21', '2024-03-14', 30, 50.00, '');
+
+    -- --------------------------------------------------------
+
+    --
+    -- Structure for table `users`
+    --
+
+    CREATE TABLE IF NOT EXISTS `users` (
+      `id` int(11) NOT NULL,
+      `username` varchar(255) NOT NULL,
+      `password` varchar(255) NOT NULL,
+      `isadmin` tinyint(1) DEFAULT 0,
+      `isactive` tinyint(1) DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+    --
+    -- Data for table `users`
+    --
+
+    INSERT INTO `users` (`id`, `username`, `password`, `isadmin`, `isactive`) VALUES
+    (1, 'user', '123', 0, 0),
+    (2, 'admin', '123', 1, 0);
+
+    --
+    -- Indexes for tables
+    --
+
+    --
+    -- Indexes for table `tours`
+    --
+
+    ALTER TABLE `tours`
+      ADD PRIMARY KEY (`id`),
+      ADD UNIQUE KEY `unique_tour` (`name`,`start_date`,`end_date`);
+
+    --
+    -- Indexes for table `users`
+    --
+
+    ALTER TABLE `users`
+      ADD PRIMARY KEY (`id`);
+
+    --
+    -- AUTO_INCREMENT for tables
+    --
+
+    --
+    -- AUTO_INCREMENT for table `tours`
+    --
+
+    ALTER TABLE `tours`
+      MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+    --
+    -- AUTO_INCREMENT for table `users`
+    --
+
+    ALTER TABLE `users`
+      MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+    COMMIT;
+
+    /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+    /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+    /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+---
+# Source: fe/templates/initdb.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-db
+data:
+  traveltours.sql: |-
+    -- phpMyAdmin SQL Dump
+    -- version 5.2.1
+    -- https://www.phpmyadmin.net/
+    --
+    -- Hostiteľ: 127.0.0.1
+    -- Čas generovania: Sun 04.Feb 2024, 22:56
+    -- Verzia serveru: 10.4.32-MariaDB
+    -- Verzia PHP: 8.2.12
+
+    SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+    START TRANSACTION;
+    SET time_zone = "+00:00";
+
+    /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+    /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+    /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+    /*!40101 SET NAMES utf8mb4 */;
+
+    --
+    -- Databáza: `traveltours`
+    --
+
+    -- --------------------------------------------------------
+
+    --
+    -- Štruktúra tabuľky pre tabuľku `tours`
+    --
+
+    CREATE DATABASE IF NOT EXISTS traveltours;
+    USE traveltours;
+
+    CREATE TABLE IF NOT EXISTS `tours` (
+      `id` int(11) NOT NULL,
+      `name` varchar(255) NOT NULL,
+      `location` varchar(255) NOT NULL,
+      `continent` varchar(255) NOT NULL,
+      `start_date` date NOT NULL,
+      `end_date` date NOT NULL,
+      `people` int(11) NOT NULL,
+      `price` decimal(10,2) NOT NULL,
+      `photo` longblob DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+    --
+    -- Sťahujem dáta pre tabuľku `tours`
+    --
+
+    INSERT INTO `tours` (`id`, `name`, `location`, `continent`, `start_date`, `end_date`, `people`, `price`, `photo`) VALUES
+    (8, 'The hottest place', 'Sahara', 'Africa', '2024-02-23', '2024-02-23', 14, 13.00, NULL),
+    (9, 'New York City', 'New York', 'North America', '2024-02-21', '2024-03-14', 30, 50.00, NULL);
+
+    -- --------------------------------------------------------
+
+    --
+    -- Štruktúra tabuľky pre tabuľku `users`
+    --
+
+    CREATE TABLE IF NOT EXISTS `users` (
+      `id` int(11) NOT NULL,
+      `username` varchar(255) NOT NULL,
+      `password` varchar(255) NOT NULL,
+      `isadmin` tinyint(1) DEFAULT 0,
+      `isactive` tinyint(1) DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+    --
+    -- Sťahujem dáta pre tabuľku `users`
+    --
+
+    INSERT INTO `users` (`id`, `username`, `password`, `isadmin`, `isactive`) VALUES
+    (1, 'user', '123', 0, 0),
+    (2, 'admin', '123', 1, 0);
+
+    --
+    -- Kľúče pre exportované tabuľky
+    --
+
+    --
+    -- Indexy pre tabuľku `tours`
+    --
+
+    ALTER TABLE `tours`
+      ADD PRIMARY KEY (`id`),
+      ADD UNIQUE KEY `unique_tour` (`name`,`start_date`,`end_date`);
+
+    --
+    -- Indexy pre tabuľku `users`
+    --
+
+    ALTER TABLE `users`
+      ADD PRIMARY KEY (`id`);
+
+    --
+    -- AUTO_INCREMENT pre exportované tabuľky
+    --
+
+    --
+    -- AUTO_INCREMENT pre tabuľku `tours`
+    --
+
+    ALTER TABLE `tours`
+      MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+    --
+    -- AUTO_INCREMENT pre tabuľku `users`
+    --
+
+    ALTER TABLE `users`
+      MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+    COMMIT;
+
+    /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+    /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+    /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+---
+# Source: fe/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-headless
+  namespace: travel
+spec:
+  clusterIP: None
+  ports:
+    - port: 3306
+      protocol: TCP
+      targetPort: 3306
+  selector:
+    app: mysql
+---
+# Source: fe/templates/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: databases-fe
+  labels:
+    helm.sh/chart: fe-0.1.0
+    app.kubernetes.io/name: fe
+    app.kubernetes.io/instance: databases
+    app.kubernetes.io/version: "1.5"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: databases-fe
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+---
+# Source: fe/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: travel
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  serviceName: mysql-headless
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      volumes:
+        - name: config-map
+          emptyDir: {}
+        - name: init-volume
+          emptyDir: {}
+        - name: data
+          persistentVolumeClaim:
+            claimName: data-mysql-0
+        - name: init-script
+          configMap:
+            name: init-db
+      initContainers:
+        - name: init-mysql
+          image:  samuelrak/db-git:main
+          command:
+            - bash
+            - "-c"
+            - |
+              set -ex
+              cp /mnt/init-script/traveltours.sql /docker-entrypoint-initdb.d/
+          volumeMounts:
+            - name: init-script
+              mountPath: /mnt/init-script
+            - name: data
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: false
+      containers:
+        - name: mysql
+          image: mysql:5.7
+          env:
+            - name: MYSQL_ALLOW_EMPTY_PASSWORD
+              value: "1"
+          ports:
+            - name: mysql
+              containerPort: 3308
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+              subPath: mysql
+            - name: config-map
+              mountPath: /etc/mysql/conf.d
+            - name: init-volume
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command: ["mysql", "-h", "127.0.0.1", "-e", "SELECT 1"]
+            initialDelaySeconds: 5
+            periodSeconds: 2
+            timeoutSeconds: 1
+        - name: xtrabackup
+          image: gcr.io/google-samples/xtrabackup:1.0
+          ports:
+            - name: xtrabackup
+              containerPort: 3309
+          command:
+            - bash
+            - "-c"
+            - |
+              set -ex
+              cd /var/lib/mysql
+              # Determine binlog position of cloned data, if any.
+              if [[ -f xtrabackup_slave_info && "x$(<xtrabackup_slave_info)" != "x" ]]; then
+                # XtraBackup already generated a partial "CHANGE MASTER TO" query
+                # because we're cloning from an existing replica. (Need to remove the tailing semicolon!)
+                cat xtrabackup_slave_info | sed -E 's/;$//g' > change_master_to.sql.in
+                # Ignore xtrabackup_binlog_info in this case (it's useless).
+                rm -f xtrabackup_slave_info xtrabackup_binlog_info
+              elif [[ -f xtrabackup_binlog_info ]]; then
+                # We're cloning directly from primary. Parse binlog position.
+                [[ `cat xtrabackup_binlog_info` =~ ^(.*?)[[:space:]]+(.*?)$ ]] || exit 1
+                rm -f xtrabackup_binlog_info xtrabackup_slave_info
+                echo "CHANGE MASTER TO MASTER_LOG_FILE='${BASH_REMATCH[1]}',\
+                      MASTER_LOG_POS=${BASH_REMATCH[2]}" > change_master_to.sql.in
+              fi
+
+              # Check if we need to complete a clone by starting replication.
+              if [[ -f change_master_to.sql.in ]]; then
+                echo "Waiting for mysqld to be ready (accepting connections)"
+                until mysql -h 127.0.0.1 -e "SELECT 1"; do sleep 1; done
+
+                echo "Initializing replication from clone position"
+                mysql -h 127.0.0.1 \
+                      -e "$(<change_master_to.sql.in), \
+                              MASTER_HOST='mysql-headless-0.mysql-headless.default.svc.cluster.local', \
+                              MASTER_USER='root', \
+                              MASTER_PASSWORD='', \
+                              MASTER_CONNECT_RETRY=10; \
+                            START SLAVE;" || exit 1
+                # In case of container restart, attempt this at-most-once.
+                mv change_master_to.sql.in change_master_to.sql.orig
+              fi
+
+              # Start a server to send backups when requested by peers.
+              exec ncat --listen --keep-open --send-only --max-conns=1 3308 -c \
+                "xtrabackup --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=root"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+              subPath: mysql
+            - name: config-map
+              mountPath: /etc/mysql/conf.d
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+---
+# Source: fe/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: databases-fe
+  labels:
+    helm.sh/chart: fe-0.1.0
+    app.kubernetes.io/name: fe
+    app.kubernetes.io/instance: databases
+    app.kubernetes.io/version: "1.5"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  rules:
+    - host: "travel.com"
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: databases-fe
+                port:
+                  number: 3306
+---
+# Source: fe/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "databases-fe-test-connection"
+  labels:
+    helm.sh/chart: fe-0.1.0
+    app.kubernetes.io/name: fe
+    app.kubernetes.io/instance: databases
+    app.kubernetes.io/version: "1.5"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['databases-fe:3306']
+  restartPolicy: Never
