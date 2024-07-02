@@ -57,10 +57,19 @@ deploy:
     - |
       ls
       helm dependency update
-      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' frontend/values.yaml
+      if [ -d frontend ]; then
+        yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' frontend/values.yaml
+      else
+        echo "Error: frontend directory not found"
+        exit 1
+      fi
       CHARTS=("frontend" "backtours" "backauth" "databases")
       for chart in "${CHARTS[@]}"; do
-          helm upgrade --install $chart ./$chart --namespace $TARGET_NS
+          if [ -d $chart ]; then
+              helm upgrade --install $chart ./$chart --namespace $TARGET_NS
+          else
+              echo "Error: $chart directory not found, skipping upgrade"
+          fi
       done
       echo $CI_COMMIT_REF_SLUG
   environment:
