@@ -60,7 +60,7 @@ deploy:
       yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' frontend/values.yaml
       CHARTS=("frontend" "backtours" "backauth" "databases")
       for chart in "${CHARTS[@]}"; do
-          helm upgrade --install $chart charts/$chart/rendered.yaml --namespace $TARGET_NS
+          helm upgrade --install $chart ./$chart --namespace $TARGET_NS
       done
       echo $CI_COMMIT_REF_SLUG
   environment:
