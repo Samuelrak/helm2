@@ -19,6 +19,7 @@ prepare:
       changes:
         paths:
         - ./*/templates/*
+        - ./*/values.yaml
   script:
     - |
       ls
