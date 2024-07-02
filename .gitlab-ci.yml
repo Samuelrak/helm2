@@ -85,6 +85,8 @@ prepare:
 downstream_build:
   image: samuelrak/helm:latest
   stage: downstream
+  rules:
+  - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_COMMIT_MESSAGE =~ /(^|\W)Chart\.yaml(\W|$)/'
   script:
     - |
       if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
@@ -113,8 +115,7 @@ downstream_build:
       else
         echo "Not triggering downstream build as branch is not default."
       fi
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_COMMIT_MESSAGE =~ /(^|\W)Chart\.yaml(\W|$)/'
+
 
     
 # tear_down: 
