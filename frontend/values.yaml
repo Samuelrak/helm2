@@ -10,7 +10,7 @@ image:
 namespace:
   travel: travel
 
-replicas: 2
+replicas: 1
 
 kind:
   deploy: Deployment
