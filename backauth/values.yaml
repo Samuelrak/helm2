@@ -33,7 +33,7 @@ config:
 
 serviceAccount:
   create: false
-  name: my-travel2
+  name: my-travel
   annotations:
     example.com/annotation: "value"
   automount: true
