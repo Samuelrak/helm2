@@ -42,7 +42,7 @@ ingress:
   enabled: true
   annotations: {}
   hosts:
-    - host: travel.com
+    - host: travelQ.com
       paths:
         - path: /
           pathType: ImplementationSpecific
