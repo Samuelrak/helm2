@@ -116,7 +116,7 @@ downstream_build:
         COMPONENT_TOKEN="${TOKEN}${COMPONENT}"
         COMPONENT_PROJECT_ID="${PROJECT_ID}${COMPONENT}"
         echo ${COMPONENT_TOKEN}
-        curl -v --request POST --form ${TOKEN}${COMPONENT} --form "ref=main" "https://gitlab.kosickaakademia.sk/api/v4/projects/${COMPONENT_PROJECT_ID}${COMPONENT}/trigger/pipeline"
+        curl -v --request POST --form ${DOWNSTREAM_PROJECT_TRIGGER_TOKEN}${COMPONENT} --form "ref=main" "https://gitlab.kosickaakademia.sk/api/v4/projects/${COMPONENT_PROJECT_ID}${COMPONENT}/trigger/pipeline"
 
       else
         echo "Not triggering downstream build as branch is not default."
