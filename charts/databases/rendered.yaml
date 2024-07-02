@@ -1,5 +1,5 @@
 ---
-# Source: fe/templates/configmap.yaml
+# Source: db/templates/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -123,7 +123,7 @@ data:
     /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
     /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 ---
-# Source: fe/templates/initdb.yaml
+# Source: db/templates/initdb.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -246,7 +246,7 @@ data:
     /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
     /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 ---
-# Source: fe/templates/service.yaml
+# Source: db/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -261,14 +261,14 @@ spec:
   selector:
     app: mysql
 ---
-# Source: fe/templates/hpa.yaml
+# Source: db/templates/hpa.yaml
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: databases-fe
+  name: databases-db
   labels:
-    helm.sh/chart: fe-0.1.0
-    app.kubernetes.io/name: fe
+    helm.sh/chart: db-0.1.0
+    app.kubernetes.io/name: db
     app.kubernetes.io/instance: databases
     app.kubernetes.io/version: "1.5"
     app.kubernetes.io/managed-by: Helm
@@ -276,7 +276,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: databases-fe
+    name: databases-db
   minReplicas: 1
   maxReplicas: 10
   metrics:
@@ -287,7 +287,7 @@ spec:
           type: Utilization
           averageUtilization: 80
 ---
-# Source: fe/templates/statefulset.yaml
+# Source: db/templates/statefulset.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -429,14 +429,14 @@ spec:
           requests:
             storage: 1Gi
 ---
-# Source: fe/templates/ingress.yaml
+# Source: db/templates/ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: databases-fe
+  name: databases-db
   labels:
-    helm.sh/chart: fe-0.1.0
-    app.kubernetes.io/name: fe
+    helm.sh/chart: db-0.1.0
+    app.kubernetes.io/name: db
     app.kubernetes.io/instance: databases
     app.kubernetes.io/version: "1.5"
     app.kubernetes.io/managed-by: Helm
@@ -449,18 +449,18 @@ spec:
             pathType: ImplementationSpecific
             backend:
               service:
-                name: databases-fe
+                name: databases-db
                 port:
                   number: 3306
 ---
-# Source: fe/templates/tests/test-connection.yaml
+# Source: db/templates/tests/test-connection.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "databases-fe-test-connection"
+  name: "databases-db-test-connection"
   labels:
-    helm.sh/chart: fe-0.1.0
-    app.kubernetes.io/name: fe
+    helm.sh/chart: db-0.1.0
+    app.kubernetes.io/name: db
     app.kubernetes.io/instance: databases
     app.kubernetes.io/version: "1.5"
     app.kubernetes.io/managed-by: Helm
@@ -471,5 +471,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['databases-fe:3306']
+      args: ['databases-db:3306']
   restartPolicy: Never
