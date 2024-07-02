@@ -107,6 +107,7 @@ release:
     - |
       VERSION=$(cat Chart.yaml | yq '.version')
       TAG_NAME="v$VERSION"
-      release-cli --private-token $PERSONAL_ACCESS_TOKEN create --name "Release helm v$VERSION" --tag-name "v$VERSION" --ref $CI_COMMIT_SHA
+      release-cli --private-token $PERSONAL_ACCESS_TOKEN --server-url $SERVER_URL --project-id $PROJECT_ID create --name "Release helm v$VERSION" --tag-name "v$VERSION" --ref $CI_COMMIT_SHA
+
 
 
