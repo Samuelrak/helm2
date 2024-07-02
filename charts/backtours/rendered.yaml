@@ -1,0 +1,110 @@
+---
+# Source: be-tours/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-tours-service
+  namespace: travel
+spec:
+  selector:
+    app: backend-tours
+  ports:
+    - protocol: TCP
+      port: 5001
+      targetPort: 5001
+---
+# Source: be-tours/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-tours
+  namespace: travel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-tours
+  template:
+    metadata:
+      labels:
+        app: backend-tours
+    spec:
+      containers:
+      - name: backend-tours
+        image: samuelrak/be-tours-git:main
+        envFrom:
+         - configMapRef:
+             name: mysql-config
+        ports:
+        - containerPort: 5001
+---
+# Source: be-tours/templates/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backtours-be-tours
+  labels:
+    helm.sh/chart: be-tours-0.1.0
+    app.kubernetes.io/name: be-tours
+    app.kubernetes.io/instance: backtours
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backtours-be-tours
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+---
+# Source: be-tours/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backtours-be-tours
+  labels:
+    helm.sh/chart: be-tours-0.1.0
+    app.kubernetes.io/name: be-tours
+    app.kubernetes.io/instance: backtours
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  rules:
+    - host: "travel.com"
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: backtours-be-tours
+                port:
+                  number: 5001
+---
+# Source: be-tours/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "backtours-be-tours-test-connection"
+  labels:
+    helm.sh/chart: be-tours-0.1.0
+    app.kubernetes.io/name: be-tours
+    app.kubernetes.io/instance: backtours
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['backtours-be-tours:5001']
+  restartPolicy: Never
