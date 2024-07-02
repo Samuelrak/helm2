@@ -30,49 +30,49 @@ prepare:
 
 
       
-deploy:
-  stage: deploy
-  image: samuelrak/helm:master
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      variables:
-        TARGET_NS: $CI_COMMIT_REF_SLUG
-        NEW_HOST: "$CI_COMMIT_REF_SLUG.mydomain.org"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      variables:
-        TARGET_NS: prod
-        NEW_HOST: "www.mydomain.org"    
-  script:
-    - |
-      ls
-      helm dependency update
-      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' frontend/values.yaml
-      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' backtours/values.yaml
-      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' backauth/values.yaml
-      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' databases/values.yaml
-      helm upgrade --install frontend frontend/ --namespace $TARGET_NS 
-      helm upgrade --install be-tours backtours/ --namespace $TARGET_NS 
-      helm upgrade --install be-auth backauth/ --namespace $TARGET_NS 
-      helm upgrade --install database databases/ --namespace $TARGET_NS 
-    - echo $CI_COMMIT_REF_SLUG
-  environment:
-    name: $TARGET_NS
-    url: $NEW_HOST
-
-
-# downstream_build:
-#   image: samuelrak/helm:latest
-#   stage: downstream
-#   script:
-#     - |
-#       if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
-#         echo "Triggering downstream build..."
-#         curl -v --request POST --form "token=${DOWNSTREAM_PROJECT_TRIGGER_TOKEN_FE}" --form ref=main https://gitlab.kosickaakademia.sk/api/v4/projects/${DOWNSTREAM_PROJECT_ID_FE}/trigger/pipeline
-#       else
-#         echo "Not triggering downstream build as branch is not default."
-#       fi
+# deploy:
+#   stage: deploy
+#   image: samuelrak/helm:master
 #   rules:
 #     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+#       variables:
+#         TARGET_NS: $CI_COMMIT_REF_SLUG
+#         NEW_HOST: "$CI_COMMIT_REF_SLUG.mydomain.org"
+#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+#       variables:
+#         TARGET_NS: prod
+#         NEW_HOST: "www.mydomain.org"    
+#   script:
+#     - |
+#       ls
+#       helm dependency update
+#       yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' frontend/values.yaml
+#       yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' backtours/values.yaml
+#       yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' backauth/values.yaml
+#       yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' databases/values.yaml
+#       helm upgrade --install frontend frontend/ --namespace $TARGET_NS 
+#       helm upgrade --install be-tours backtours/ --namespace $TARGET_NS 
+#       helm upgrade --install be-auth backauth/ --namespace $TARGET_NS 
+#       helm upgrade --install database databases/ --namespace $TARGET_NS 
+#     - echo $CI_COMMIT_REF_SLUG
+#   environment:
+#     name: $TARGET_NS
+#     url: $NEW_HOST
+
+
+downstream_build:
+  image: samuelrak/helm:latest
+  stage: downstream
+  script:
+    - |
+      if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
+        echo "Triggering downstream build..."
+        curl -v --request POST --form "token=${DOWNSTREAM_PROJECT_TRIGGER_TOKEN_FE}" --form ref=main https://gitlab.kosickaakademia.sk/api/v4/projects/${DOWNSTREAM_PROJECT_ID_FE}/trigger/pipeline
+      else
+        echo "Not triggering downstream build as branch is not default."
+      fi
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     
 # tear_down: 
 #   image: samuelrak/helm:latest
