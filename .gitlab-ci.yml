@@ -68,7 +68,7 @@ deploy:
           if [ -d $chart ]; then
               if [ -f $chart/Chart.yaml ]; then
                   ls ./$chart
-                  helm upgrade --install $chart ./$chart --namespace $TARGET_NS
+                  helm upgrade --install $chart /$chart --namespace $TARGET_NS
               else
                   echo "Error: $chart directory does not contain Chart.yaml file, skipping upgrade"
               fi
