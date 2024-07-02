@@ -15,18 +15,24 @@ prepare:
   stage: validate
   image: samuelrak/helm:master
   rules:
-     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
     - |
       ls
-      helm dependency update
-      helm template frontend ./frontend | tee -a rendered.yaml
-      helm template backtours ./backtours | tee -a rendered.yaml
-      helm template backauth ./backauth | tee -a rendered.yaml
-      helm template databases ./databases | tee -a rendered.yaml
+      CHARTS=("frontend" "backtours" "backauth" "databases")
+      mkdir -p charts  
+      > charts/rendered.yaml 
+      for chart in "${CHARTS[@]}"; do
+          helm template "$chart" ./"$chart" | tee -a charts/rendered.yaml
+      done
+    - git config --global user.email "Samuel.rak@kosickaakademia.sk"
+    - git config --global user.name "Samuel.rak"
+    - git add charts/rendered.yaml
+    - git commit -m "Add rendered.yaml from CI"
+    - git push origin $CI_COMMIT_BRANCH
   artifacts:
     paths:
-      - rendered.yaml
+      - charts/rendered.yaml
 
 
       
