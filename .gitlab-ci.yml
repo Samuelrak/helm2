@@ -6,7 +6,6 @@ stages:
   - downstream
   - release
 
-
 variables:
   DOCKER_REPO: samuelrak/helm
   VERSION: latest
@@ -42,37 +41,31 @@ prepare:
     paths:
       - ../charts/
 
-
-      
-# deploy:
-#   stage: deploy
-#   image: samuelrak/helm:master
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-#       variables:
-#         TARGET_NS: $CI_COMMIT_REF_SLUG
-#         NEW_HOST: "$CI_COMMIT_REF_SLUG.mydomain.org"
-#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-#       variables:
-#         TARGET_NS: prod
-#         NEW_HOST: "www.mydomain.org"    
-#   script:
-#     - |
-#       ls
-#       helm dependency update
-#       yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' frontend/values.yaml
-#       yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' backtours/values.yaml
-#       yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' backauth/values.yaml
-#       yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' databases/values.yaml
-#       helm upgrade --install frontend frontend/ --namespace $TARGET_NS 
-#       helm upgrade --install be-tours backtours/ --namespace $TARGET_NS 
-#       helm upgrade --install be-auth backauth/ --namespace $TARGET_NS 
-#       helm upgrade --install database databases/ --namespace $TARGET_NS 
-#     - echo $CI_COMMIT_REF_SLUG
-#   environment:
-#     name: $TARGET_NS
-#     url: $NEW_HOST
-
+deploy:
+  stage: deploy
+  image: samuelrak/helm:master
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      variables:
+        TARGET_NS: $CI_COMMIT_REF_SLUG
+        NEW_HOST: "$CI_COMMIT_REF_SLUG.mydomain.org"
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+      variables:
+        TARGET_NS: prod
+        NEW_HOST: "www.mydomain.org"
+  script:
+    - |
+      ls
+      helm dependency update
+      yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' frontend/values.yaml
+      CHARTS=("frontend" "backtours" "backauth" "databases")
+      for chart in "${CHARTS[@]}"; do
+          helm upgrade --install $chart charts/$chart/rendered.yaml --namespace $TARGET_NS
+      done
+      echo $CI_COMMIT_REF_SLUG
+  environment:
+    name: $TARGET_NS
+    url: $NEW_HOST
 
 downstream_build:
   image: samuelrak/helm:latest
