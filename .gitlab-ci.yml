@@ -67,7 +67,7 @@ downstream_build:
     - |
       if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
         echo "Triggering downstream build..."
-        curl -v --request POST --form "token=${DOWNSTREAM_PROJECT_TRIGGER_TOKEN}" --form ref=main https://gitlab.kosickaakademia.sk/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/trigger/pipeline
+        curl -v --request POST --form "token=${DOWNSTREAM_PROJECT_TRIGGER_TOKEN_FE}" --form ref=main https://gitlab.kosickaakademia.sk/api/v4/projects/${DOWNSTREAM_PROJECT_ID_FE}/trigger/pipeline
       else
         echo "Not triggering downstream build as branch is not default."
       fi
