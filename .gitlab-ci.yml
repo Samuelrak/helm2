@@ -32,9 +32,9 @@ prepare:
       for chart in "${CHARTS[@]}"; do
           mkdir -p "charts/$chart"
           helm template "$chart" ./"$chart" | tee "charts/$chart/rendered.yaml"
+          git add "charts/$chart/rendered.yaml"
+          git commit -m "Added rendered.yaml for $chart"
       done
-      git add "charts/$chart/rendered.yaml"
-      git commit -m "Added rendered.yaml for $chart"
       git push origin $CI_COMMIT_BRANCH
   artifacts:
     paths:
