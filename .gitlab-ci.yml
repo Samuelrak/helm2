@@ -19,7 +19,7 @@ prepare:
   script:
     - |
       ls
-      git clone https://gitlab.kosickaakademia.sk/Samuel.Rak/helm-git/
+      git clone https://Samuel.rak:Sam12345rk@gitlab.kosickaakademia.sk/Samuel.Rak/helm-git
       cd helm-git
       CHARTS=("frontend" "backtours" "backauth" "databases")
       for chart in "${CHARTS[@]}"; do
