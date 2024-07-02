@@ -291,7 +291,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: mysql
+  name: mysql-web
   namespace: travel
 spec:
   selector:
