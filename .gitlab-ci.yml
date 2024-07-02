@@ -89,22 +89,18 @@ downstream_build:
     - |
       if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
         echo "Triggering downstream build..."
-        case "$(dirname $CI_COMMIT_PATH)/" in
+        case path "$(dirname $CI_COMMIT_PATH)/" in
           "frontend/")
-            TOKEN="${DOWNSTREAM_PROJECT_TRIGGER_TOKEN_FE}"
-            PROJECT_ID="${DOWNSTREAM_PROJECT_ID_FE}"
+           FE
             ;;
           "backend-auth/")
-            TOKEN="${DOWNSTREAM_PROJECT_TRIGGER_TOKEN_BE_AUTH}"
-            PROJECT_ID="${DOWNSTREAM_PROJECT_ID_BE_AUTH}"
+           BACKAUTH
             ;;
           "backend-tours/")
-            TOKEN="${DOWNSTREAM_PROJECT_TRIGGER_TOKEN_BE_TOURS}"
-            PROJECT_ID="${DOWNSTREAM_PROJECT_ID_BE_TOURS}"
+           BACKTOURS
             ;;
           "databases/")
-            TOKEN="${DOWNSTREAM_PROJECT_TRIGGER_TOKEN_DB}"
-            PROJECT_ID="${DOWNSTREAM_PROJECT_ID_DB}"
+           DB
             ;;
           *)
             echo "Unknown folder: $(dirname $CI_COMMIT_PATH)"
@@ -112,7 +108,7 @@ downstream_build:
             ;;
         esac
 
-        curl -v --request POST --form "token=${TOKEN}" --form ref=main "https://gitlab.kosickaakademia.sk/api/v4/projects/${PROJECT_ID}/trigger/pipeline"
+        curl -v --request POST --form "token=${TOKEN} + path" --form ref=main "https://gitlab.kosickaakademia.sk/api/v4/projects/${PROJECT_ID}/trigger/pipeline"
 
       else
         echo "Not triggering downstream build as branch is not default."
