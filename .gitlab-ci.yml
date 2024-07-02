@@ -94,10 +94,7 @@ downstream_build:
         echo "Not triggering downstream build as branch is not default."
       fi
   rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      changes:
-        paths:
-        - Chart.yaml
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_COMMIT_MESSAGE =~ /(^|\W)Chart\.yaml(\W|$)/'
 
     
 # tear_down: 
