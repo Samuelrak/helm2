@@ -108,7 +108,7 @@ downstream_build:
             ;;
         esac
 
-        curl -v --request POST --form "token=${TOKEN}${COMPONENT} + path" --form ref=main "https://gitlab.kosickaakademia.sk/api/v4/projects/${PROJECT_ID}${COMPONENT}/trigger/pipeline"
+        curl -v --request POST --form "token=${TOKEN}_${COMPONENT} + path" --form ref=main "https://gitlab.kosickaakademia.sk/api/v4/projects/${PROJECT_ID}_${COMPONENT}/trigger/pipeline"
 
       else
         echo "Not triggering downstream build as branch is not default."
