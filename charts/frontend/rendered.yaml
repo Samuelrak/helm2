@@ -47,7 +47,7 @@ metadata:
   name: front-end-web
   namespace: travel
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: front-end
