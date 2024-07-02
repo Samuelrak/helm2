@@ -21,16 +21,17 @@ prepare:
       ls
       git clone https://Samuel.rak:Sam12345rk@gitlab.kosickaakademia.sk/Samuel.Rak/helm-git
       cd helm-git
-      CHARTS=("frontend" "backtours" "backauth" "databases")
-      for chart in "${CHARTS[@]}"; do
-          mkdir -p "../charts/$chart"
-          helm template "$chart" ./"$chart" | tee "../charts/$chart/rendered.yaml"
-      done
-      git config --global user.email "Samuel.rak@kosickaakademia.sk"
-      git config --global user.name "Samuel.rak"
-      git add ../charts
-      git commit -m "Add rendered.yaml files from CI"
-      git push origin $CI_COMMIT_BRANCH
+        CHARTS=("frontend" "backtours" "backauth" "databases")
+        mkdir -p charts  
+        for chart in "${CHARTS[@]}"; do
+            mkdir -p "charts/$chart"
+            helm template "$chart" ./"$chart" | tee "charts/$chart/rendered.yaml"
+        done
+        git config --global user.email "Samuel.rak@kosickaakademia.sk"
+        git config --global user.name "Samuel.rak"
+        git add charts
+        git commit -m "Add rendered.yaml files from CI"
+        git push origin $CI_COMMIT_BRANCH
   artifacts:
     paths:
       - ../charts/
