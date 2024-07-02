@@ -90,10 +90,8 @@ downstream_build:
       if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
         echo "Triggering downstream build..."
         
-        # Get the list of changed files in the last commit
         CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
         
-        # Determine the directory of the first changed file
         CHANGED_DIR=$(dirname $(echo "$CHANGED_FILES" | head -n 1))
         
         case "$CHANGED_DIR/" in
