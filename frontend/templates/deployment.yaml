@@ -1,7 +1,7 @@
 apiVersion: {{ .Values.api.app }}
 kind: {{ .Values.kind.deploy }}
 metadata:
-  name: {{ .Values.label.app }}
+  name: {{ .Values.label.app }}-web
   namespace: {{ .Values.namespace.travel }}
 spec:
   replicas: {{ .Values.replicas }}
