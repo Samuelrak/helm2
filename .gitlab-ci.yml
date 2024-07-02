@@ -73,6 +73,10 @@ downstream_build:
       fi
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        paths:
+        - Chart.yaml
+
     
 # tear_down: 
 #   image: samuelrak/helm:latest
