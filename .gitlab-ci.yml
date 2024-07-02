@@ -89,7 +89,14 @@ downstream_build:
     - |
       if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
         echo "Triggering downstream build..."
-        case "$(dirname "$CI_COMMIT_PATH")/" in
+        
+        # Get the list of changed files in the last commit
+        CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+        
+        # Determine the directory of the first changed file
+        CHANGED_DIR=$(dirname $(echo "$CHANGED_FILES" | head -n 1))
+        
+        case "$CHANGED_DIR/" in
           "frontend/")
             COMPONENT="FE"
             ;;
@@ -103,19 +110,21 @@ downstream_build:
             COMPONENT="DB"
             ;;
           *)
-            echo "Unknown folder: $(dirname "$CI_COMMIT_PATH")"
+            echo "Unknown folder: $CHANGED_DIR"
             exit 1
             ;;
         esac
 
-        curl -v --request POST --form "token=${TOKEN}_${COMPONENT} + path" --form ref=main "https://gitlab.kosickaakademia.sk/api/v4/projects/${PROJECT_ID}_${COMPONENT}/trigger/pipeline"
+        COMPONENT_TOKEN="${TOKEN}${COMPONENT}"
+        COMPONENT_PROJECT_ID="${PROJECT_ID}${COMPONENT}"
+
+        curl -v --request POST --form "token=${COMPONENT_TOKEN}" --form "ref=main" "https://gitlab.kosickaakademia.sk/api/v4/projects/${COMPONENT_PROJECT_ID}/trigger/pipeline"
 
       else
         echo "Not triggering downstream build as branch is not default."
       fi
   rules:
-  - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_COMMIT_MESSAGE =~ /(^|\W)Chart\.yaml(\W|$)/'
-
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_COMMIT_MESSAGE =~ /(^|\W)Chart\.yaml(\W|$)/'
     
 # tear_down: 
 #   image: samuelrak/helm:latest1
