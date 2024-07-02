@@ -16,6 +16,9 @@ prepare:
   image: samuelrak/helm:master
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        paths:
+        - ./*/templates/*
   script:
     - |
       ls
