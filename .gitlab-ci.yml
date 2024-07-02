@@ -96,16 +96,16 @@ downstream_build:
         
         case "$CHANGED_DIR/" in
           "frontend/")
-            COMPONENT="FE"
+            COMPONENT="_FE"
             ;;
           "backend-auth/")
-            COMPONENT="BACKAUTH"
+            COMPONENT="_BACKAUTH"
             ;;
           "backend-tours/")
-            COMPONENT="BACKTOURS"
+            COMPONENT="_BACKTOURS"
             ;;
           "databases/")
-            COMPONENT="DB"
+            COMPONENT="_DB"
             ;;
           *)
             echo "Unknown folder: $CHANGED_DIR"
@@ -115,8 +115,8 @@ downstream_build:
 
         COMPONENT_TOKEN="${TOKEN}${COMPONENT}"
         COMPONENT_PROJECT_ID="${PROJECT_ID}${COMPONENT}"
-
-        curl -v --request POST --form "token=${COMPONENT_TOKEN}" --form "ref=main" "https://gitlab.kosickaakademia.sk/api/v4/projects/${COMPONENT_PROJECT_ID}/trigger/pipeline"
+        echo ${COMPONENT_TOKEN}
+        curl -v --request POST --form ${TOKEN}${COMPONENT} --form "ref=main" "https://gitlab.kosickaakademia.sk/api/v4/projects/${COMPONENT_PROJECT_ID}${COMPONENT}/trigger/pipeline"
 
       else
         echo "Not triggering downstream build as branch is not default."
