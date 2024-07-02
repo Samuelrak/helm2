@@ -32,8 +32,8 @@ prepare:
       for chart in "${CHARTS[@]}"; do
           mkdir -p "charts/$chart"
           helm template "$chart" ./"$chart" | tee "charts/$chart/rendered.yaml"
+          git add "charts/$chart/rendered.yaml"
       done
-      git add "charts/$chart/rendered.yaml"
       git fetch origin
       git pull origin main
       git commit -m "Added rendered.yaml for $chart"
