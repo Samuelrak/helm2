@@ -19,20 +19,21 @@ prepare:
   script:
     - |
       ls
+      git clone https://gitlab.kosickaakademia.sk/Samuel.Rak/helm-git/
+      cd helm-git
       CHARTS=("frontend" "backtours" "backauth" "databases")
-      mkdir -p charts  
-      > charts/rendered.yaml 
       for chart in "${CHARTS[@]}"; do
-          helm template "$chart" ./"$chart" | tee -a charts/rendered.yaml
+          mkdir -p "../charts/$chart"
+          helm template "$chart" ./"$chart" | tee "../charts/$chart/rendered.yaml"
       done
-    - git config --global user.email "Samuel.rak@kosickaakademia.sk"
-    - git config --global user.name "Samuel.rak"
-    - git add charts/rendered.yaml
-    - git commit -m "Add rendered.yaml from CI"
-    - git push origin $CI_COMMIT_BRANCH
+      git config --global user.email "Samuel.rak@kosickaakademia.sk"
+      git config --global user.name "Samuel.rak"
+      git add ../charts
+      git commit -m "Add rendered.yaml files from CI"
+      git push origin $CI_COMMIT_BRANCH
   artifacts:
     paths:
-      - charts/rendered.yaml
+      - ../charts/
 
 
       
