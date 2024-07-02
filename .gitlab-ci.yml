@@ -113,8 +113,8 @@ downstream_build:
             ;;
         esac
 
-        COMPONENT_TOKEN="${DOWNSTREAM_PROJECT_TRIGGER_TOKEN}+${COMPONENT}"
-        COMPONENT_ID="${COMPONENT_PROJECT_ID}+${COMPONENT}"
+        COMPONENT_TOKEN="DOWNSTREAM_PROJECT_TRIGGER_TOKEN${COMPONENT}"
+        COMPONENT_ID="COMPONENT_PROJECT_ID${COMPONENT}"
         echo $COMPONENT_TOKEN
         echo $COMPONENT_ID
         curl -v --request POST --form "token=${COMPONENT_TOKEN}" --form "ref=main" "https://gitlab.kosickaakademia.sk/api/v4/projects/${COMPONENT_ID}/trigger/pipeline"
