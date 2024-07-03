@@ -12,7 +12,7 @@ variables:
 
 prepare:
   stage: validate
-  image: samuelrak/helm:master
+  image: ${DOCKER_REPO}:${VERSION}
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes:
@@ -22,16 +22,16 @@ prepare:
   script:
     - |
       ls
-      git config --global user.name "Samuel.rak"
-      git config --global user.email "Samuel.rak@kosickaakademia.sk" 
-      git clone https://Samuel.rak:Sam12345rk@gitlab.kosickaakademia.sk/Samuel.Rak/helm-git
+      git config --global user.name "${GITLAB_USERNAME}"
+      git config --global user.email "${GITLAB_EMAIL}" 
+      git clone https://${GITLAB_USERNAME}:${GITLAB_PASSWORD}@gitlab.kosickaakademia.sk/Samuel.Rak/helm-git
       cd helm-git
       CHARTS=("frontend" "backtours" "backauth" "databases")
       mkdir -p charts  
       for chart in "${CHARTS[@]}"; do
           mkdir -p "charts/$chart"
-          helm template "$chart" ./"$chart" | tee "charts/$chart/rendered.yaml"
-          git add "charts/$chart/rendered.yaml"
+          helm template "$chart" ./"$chart" | tee "rendered/$chart/rendered.yaml"
+          git add "rendered/$chart/rendered.yaml"
       done
       git fetch origin
       git pull origin main
@@ -41,49 +41,49 @@ prepare:
     paths:
       - ../charts/
 
-# deploy:
-#   stage: deploy
-#   image: samuelrak/helm:master
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-#       variables:
-#         TARGET_NS: $CI_COMMIT_REF_SLUG
-#         NEW_HOST: "$CI_COMMIT_REF_SLUG.mydomain.org"
-#     - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
-#       variables:
-#         TARGET_NS: prod
-#         NEW_HOST: "www.mydomain.org"
-#   script:
-#     - |
-#       ls
-#       if [ -d frontend ]; then
-#           yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' frontend/values.yaml
-#         else
-#           echo "Error: frontend directory not found"
-#           exit 1
-#         fi
-#       CHARTS=("backauth" "backtours" "databases" "frontend")
-#       for chart in "${CHARTS[@]}"; do
-#           if [ -d $chart ]; then
-#               if [ -f $chart/Chart.yaml ]; then
-#                   cd ./$chart
-#                   helm dependency update
-#                   helm upgrade --install $chart . --namespace $TARGET_NS
-#                   cd .. 
-#               else
-#                   echo "Error: $chart directory does not contain Chart.yaml file, skipping upgrade"
-#               fi
-#           else
-#               echo "Error: $chart directory not found, skipping upgrade"
-#           fi
-#       done
-#       echo $CI_COMMIT_REF_SLUG
-#   environment:
-#     name: $TARGET_NS
-#     url: $NEW_HOST
+deploy:
+  stage: deploy
+  image: ${DOCKER_REPO}:${VERSION}
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      variables:
+        TARGET_NS: $CI_COMMIT_REF_SLUG
+        NEW_HOST: "$CI_COMMIT_REF_SLUG.mydomain.org"
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+      variables:
+        TARGET_NS: prod
+        NEW_HOST: "www.mydomain.org"
+  script:
+    - |
+      ls
+      if [ -d frontend ]; then
+          yq e -i '.ingress.hosts[0].host="'$NEW_HOST'"' frontend/values.yaml
+        else
+          echo "directory not found"
+          exit 1
+        fi
+      CHARTS=("backauth" "backtours" "databases" "frontend")
+      for chart in "${CHARTS[@]}"; do
+          if [ -d $chart ]; then
+              if [ -f $chart/Chart.yaml ]; then
+                  cd ./$chart
+                  helm dependency update
+                  helm upgrade --install $chart . --namespace $TARGET_NS
+                  cd .. 
+              else
+                  echo "$chart directory does not contain Chart.yaml"
+              fi
+          else
+              echo "Error: $chart directory not found"
+          fi
+      done
+      echo $CI_COMMIT_REF_SLUG
+  environment:
+    name: $TARGET_NS
+    url: $NEW_HOST
 
 downstream_build:
-  image: samuelrak/helm:latest
+  image: ${DOCKER_REPO}:${VERSION}
   stage: downstream
   script:
     - |
@@ -121,33 +121,30 @@ downstream_build:
 
         curl -v --request POST --form "token=${!COMPONENT_TOKEN}" --form "ref=main" "https://gitlab.kosickaakademia.sk/api/v4/projects/${!COMPONENT_ID}/trigger/pipeline"
 
-
       else
-        echo "Not triggering downstream build as branch is not default."
+        echo "downstream build is not default."
       fi
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_COMMIT_MESSAGE =~ /(^|\W)Chart\.yaml(\W|$)/'
     
-# tear_down: 
-#   image: samuelrak/helm:latest1
-#   stage: tear_down
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-#       variables:
-#         TARGET_NS: $CI_COMMIT_REF_SLUG
-#   script:
-#     - |
-#       helm list --namespace $TARGET_NS 2>/dev/null || ( echo "Release not installed" && exit 0 )
-#       kubectl delete ns $TARGET_NS
-#   environment:
-#     name: $TARGET_NS
-#     action: stop    
-
-    
+tear_down: 
+  image: ${DOCKER_REPO}:${VERSION}
+  stage: tear_down
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      variables:
+        TARGET_NS: $CI_COMMIT_REF_SLUG
+  script:
+    - |
+      helm list --namespace $TARGET_NS 2>/dev/null || ( echo "Release not installed" && exit 0 )
+      kubectl delete ns $TARGET_NS
+  environment:
+    name: $TARGET_NS
+    action: stop    
 
 release:
   stage: release
-  image: samuelrak/helm:latest
+  image: ${DOCKER_REPO}:${VERSION}
   rules:
   - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     changes:
@@ -158,6 +155,3 @@ release:
       VERSION=$(cat Chart.yaml | yq '.version')
       TAG_NAME="v$VERSION"
       release-cli --private-token $PERSONAL_ACCESS_TOKEN --server-url $SERVER_URL --project-id $PROJECT_ID create --name "Release helm v$VERSION" --tag-name "v$VERSION" --ref $CI_COMMIT_SHA
-
-
-
