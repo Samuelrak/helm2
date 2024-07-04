@@ -4,3 +4,8 @@ description: A Helm chart for the back-end tours service
 type: application
 version: 0.1.1
 appVersion: "1.0"
+
+dependencies:
+  - name: be-auth
+    version: 0.1.0
+    repository: "file://../"
